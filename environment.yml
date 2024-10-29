@@ -1,0 +1,18 @@
+name: pharynphoto
+channels:
+  - conda-forge
+  - pytorch
+  - nvidia
+dependencies:
+  - python
+  - pytorch
+  - torchvision
+  - torchaudio
+  - pytorch-cuda=12.4
+  - cudatoolkit
+  - albumentations
+  - tqdm
+  - matplotlib
+  - numpy
+  # - pip:
+    # - albumentations  # slightly more up to date
