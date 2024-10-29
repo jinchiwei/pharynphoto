@@ -41,7 +41,7 @@ def main():
 
     # Load model and weights
     model = get_model().to(device)
-    model.load_state_dict(torch.load(args.weights, map_location=device, weights_only=True)["model_state_dict"])
+    model.load_state_dict(torch.load(args.weights, map_location=device)["model_state_dict"])
     print(f"Loaded model weights from {args.weights}")
 
     # Evaluate the model
