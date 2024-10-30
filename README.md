@@ -9,6 +9,11 @@ pharyngitis_classification/
 │   ├── model.py              # model architectures
 │   ├── train.py              # training and validation functions
 │   └── main.py               # main script
+├── results/
+│   ├── dataloader.py         # dataset loading and transformations
+│   ├── *.png                 # train/val accuracy/loss, confusion, heatmaps, roc
+│   ├── test_accuracy.txt     # per-image class probabilities
+│   └── training_results.csv  # per-epoch train results
 ├── environment.yml           # dependencies
 └── README.md                 # documentation
 ```
