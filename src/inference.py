@@ -5,7 +5,8 @@ from pathlib import Path
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay, roc_auc_score, roc_curve
+
 from torchcam.methods import SmoothGradCAMpp
 from torchcam.utils import overlay_mask
 from torchvision.transforms.functional import to_pil_image
@@ -15,12 +16,13 @@ from dataloader import get_data_loaders
 
 
 def evaluate(model, dataloader, device, results_dir):
-    """Evaluate the model on the test dataset and save detailed results."""
+    """Evaluate the model on the test dataset and save detailed results, including AUC and ROC curve."""
     model.eval()
     correct = 0
     total = 0
     all_labels = []
     all_preds = []
+    all_probs = []  # collect probabilities for AUC
     results = []
 
     with torch.no_grad():
@@ -34,17 +36,24 @@ def evaluate(model, dataloader, device, results_dir):
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
+            # collect predictions, labels, and probabilities
+            all_labels.extend(labels.cpu().numpy())
+            all_preds.extend(predicted.cpu().numpy())
+            all_probs.extend(probabilities[:, 1].cpu().numpy())  # Probability of "yes" class
+
             # collect results per sample
             for i in range(labels.size(0)):
                 filename = Path(paths[i]).name
                 is_correct = "right" if predicted[i] == labels[i] else "wrong"
                 results.append(f"{filename} -> {confidence_yes[i]:.2f}% yes -> {is_correct}")
-                all_labels.append(labels[i].cpu().numpy())
-                all_preds.append(predicted[i].cpu().numpy())
 
     # calculate overall accuracy
     accuracy = 100 * correct / total
     results.append(f"\nTotal accuracy: {correct}/{total}, {accuracy:.2f}%")
+
+    # calculate AUC
+    auc_score = roc_auc_score(all_labels, all_probs)
+    results.append(f"AUC: {auc_score:.4f}")
 
     # save individual sample results and accuracy
     with open(results_dir / "test_accuracy.txt", "w") as f:
@@ -58,7 +67,20 @@ def evaluate(model, dataloader, device, results_dir):
     plt.savefig(results_dir / "confusion_matrix.png")
     plt.close()
 
-    return accuracy
+    # plot and save the ROC curve
+    fpr, tpr, _ = roc_curve(all_labels, all_probs)
+    plt.figure()
+    plt.plot(fpr, tpr, label=f'ROC curve (AUC = {auc_score:.2f})')
+    plt.plot([0, 1], [0, 1], 'k--')  # Diagonal line for reference
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('Receiver Operating Characteristic (ROC) Curve')
+    plt.legend(loc="lower right")
+    plt.savefig(results_dir / "roc_curve.png")
+    plt.close()
+    print(f"ROC curve saved to {results_dir / 'roc_curve.png'}")
+
+    return accuracy, auc_score
 
 
 def generate_cam(model, images, labels, device, target_layer='model.layer4'):  # model.layer4.2.conv3
@@ -129,10 +151,12 @@ def main():
     model.load_state_dict(torch.load(args.weights, map_location=device)["model_state_dict"])
     print(f"Loaded model weights from {args.weights}")
 
-    # evaluate the model and generate confusion matrix
+    # evaluate the model and generate confusion matrix, AUC, and ROC curve
     results_dir = Path(__file__).resolve().parent.parent / 'results'
     results_dir.mkdir(exist_ok=True)
-    accuracy = evaluate(model, test_loader, device, results_dir)
+    accuracy, auc_score = evaluate(model, test_loader, device, results_dir)
+    print(f"Final Test Accuracy: {accuracy:.2f}%, AUC: {auc_score:.4f}")
+
 
     # generate CAMs for a few test images
     sample_images, sample_labels, *_ = next(iter(test_loader))

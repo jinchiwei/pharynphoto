@@ -56,3 +56,4 @@ scvbnjiuytf.JPG -> 99.98% yes -> right
 sghtyjuikol.JPG -> 95.84% yes -> right
 
 Total accuracy: 50/56, 89.29%
+AUC: 0.9657
