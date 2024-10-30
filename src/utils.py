@@ -27,7 +27,7 @@ def split_data(dir_in, dir_out):
         train_cutoff = int(len(images) * ratio_train)
         val_cutoff = int(len(images) * (ratio_train + ratio_val))
 
-        # Split images into train, val, and test sets
+        # split images into train, val, and test sets
         train_images = images[:train_cutoff]
         val_images = images[train_cutoff:val_cutoff]
         test_images = images[val_cutoff:]
@@ -40,7 +40,7 @@ def split_data(dir_in, dir_out):
         for img in tqdm(test_images, desc=f"Copying {class_folder.name} images to test"):
             shutil.copy(img, dir_test / class_folder.name / img.name)
 
-    # Split both 'no' and 'yes' class folders
+    # split both 'no' and 'yes' class folders
     for class_name in tqdm(['no_pharyngitis', 'yes_pharyngitis'], desc='Classes:'):
         class_folder = dir_in / class_name
         split_and_copy_images(class_folder)
